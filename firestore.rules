@@ -1,0 +1,60 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global safety net catch-all deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128;
+    }
+
+    // Rules for sekolah (Schools)
+    match /sekolah/{npsn} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Rules for siswa (Students)
+    match /siswa/{siswaId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Rules for kehadiran (Attendance Logs)
+    match /kehadiran/{logId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Rules for app_broadcast (Announcements)
+    match /app_broadcast/{broadcastId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Rules for hari_libur (Holidays)
+    match /hari_libur/{holidayId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Rules for login (User credentials)
+    match /login/{loginId} {
+      allow read, write: if true;
+    }
+
+    // Rules for admin_page_settings (Page settings)
+    match /admin_page_settings/{pageId} {
+      allow read: if true;
+      allow write: if true;
+    }
+  }
+}

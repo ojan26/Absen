@@ -1,0 +1,129 @@
+{
+  "entities": {
+    "School": {
+      "title": "School",
+      "description": "Information about registered schools in the system",
+      "type": "object",
+      "properties": {
+        "npsn": { "type": "string", "description": "Unique National School Identification Number" },
+        "nama": { "type": "string", "description": "Name of the school" },
+        "alamat": { "type": "string", "description": "Physical address of the school" }
+      },
+      "required": ["npsn", "nama"]
+    },
+    "Student": {
+      "title": "Student",
+      "description": "Student details for attendance scanning",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "System unique ID or NISN" },
+        "nama": { "type": "string", "description": "Student's full name" },
+        "nisn": { "type": "string", "description": "National Student ID Number" },
+        "kelas": { "type": "string", "description": "Student class (defaults to Umum)" },
+        "npsn_sekolah": { "type": "string", "description": "The NPSN of the school this student belongs to" },
+        "created_at": { "type": "string", "description": "ISO timestamp of creation" }
+      },
+      "required": ["id", "nama", "nisn", "npsn_sekolah"]
+    },
+    "AttendanceLog": {
+      "title": "AttendanceLog",
+      "description": "Daily attendance scans and logs",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique transaction ID" },
+        "student_id": { "type": "string", "description": "Reference to the student ID" },
+        "nama": { "type": "string", "description": "Name of the student scanned" },
+        "nisn": { "type": "string", "description": "NISN of the student" },
+        "kelas": { "type": "string", "description": "Class of the student" },
+        "npsn_sekolah": { "type": "string", "description": "NPSN of the school" },
+        "status": { "type": "string", "description": "Attendance status: Hadir, Sakit, Izin, Alpa" },
+        "waktu": { "type": "string", "description": "ISO timestamp of scan" },
+        "scan_method": { "type": "string", "description": "Scanning method (QR Code, Manual, etc.)" }
+      },
+      "required": ["id", "student_id", "nama", "nisn", "npsn_sekolah", "status", "waktu"]
+    },
+    "Broadcast": {
+      "title": "Broadcast",
+      "description": "Global or school-wide informational announcements",
+      "type": "object",
+      "properties": {
+        "id": { "type": "number", "description": "Numeric broadcast identifier" },
+        "title": { "type": "string", "description": "Title of the announcement" },
+        "message": { "type": "string", "description": "Body content of the announcement" },
+        "drive_link": { "type": "string", "description": "Optional associated link/attachment" },
+        "type": { "type": "string", "description": "Type of announcement: INFO, INSTRUCTION, ALERT" },
+        "is_active": { "type": "boolean", "description": "Whether the broadcast is active and visible" },
+        "updated_id": { "type": "number", "description": "Timestamp/ID of modification" }
+      },
+      "required": ["id", "title", "message", "is_active"]
+    },
+    "Holiday": {
+      "title": "Holiday",
+      "description": "Holidays and school closures",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique holiday identifier" },
+        "tanggal": { "type": "string", "description": "Date of the holiday (YYYY-MM-DD)" },
+        "nama": { "type": "string", "description": "Name/description of the holiday" },
+        "npsn_sekolah": { "type": "string", "description": "Associated school NPSN or ALL" },
+        "keterangan": { "type": "string", "description": "Additional notes" }
+      },
+      "required": ["id", "tanggal", "nama", "npsn_sekolah"]
+    },
+    "LoginTableRecord": {
+      "title": "LoginTableRecord",
+      "description": "User login credentials and roles in the database",
+      "type": "object",
+      "properties": {
+        "id": { "type": "number", "description": "Unique numeric login ID" },
+        "email": { "type": "string", "description": "Login email address" },
+        "password": { "type": "string", "description": "Cleartext or hashed login password" },
+        "role": { "type": "string", "description": "User privilege tier: superadmin, admin, guru" },
+        "npsn_sekolah": { "type": "string", "description": "Associated school NPSN or null if superadmin" },
+        "kelas_tugas": { "type": "string", "description": "Assigned class details (for guru)" }
+      },
+      "required": ["id", "email", "password", "role"]
+    },
+    "AdminPageSetting": {
+      "title": "AdminPageSetting",
+      "description": "Controls visibility of specific admin pages for different roles",
+      "type": "object",
+      "properties": {
+        "page_id": { "type": "string", "description": "Unique page/tab identifier" },
+        "page_name": { "type": "string", "description": "Human-readable label of the page" },
+        "is_visible": { "type": "boolean", "description": "Visibility state of the page" }
+      },
+      "required": ["page_id", "page_name", "is_visible"]
+    }
+  },
+  "firestore": {
+    "sekolah/{npsn}": {
+      "schema": "School",
+      "description": "Registered schools mapped by NPSN"
+    },
+    "siswa/{siswaId}": {
+      "schema": "Student",
+      "description": "Student details collection"
+    },
+    "kehadiran/{logId}": {
+      "schema": "AttendanceLog",
+      "description": "Daily attendance scans"
+    },
+    "app_broadcast/{broadcastId}": {
+      "schema": "Broadcast",
+      "description": "Broadcasts and alerts"
+    },
+    "hari_libur/{holidayId}": {
+      "schema": "Holiday",
+      "description": "Seeded and custom school holidays"
+    },
+    "login/{loginId}": {
+      "schema": "LoginTableRecord",
+      "description": "User access database"
+    },
+    "admin_page_settings/{pageId}": {
+      "schema": "AdminPageSetting",
+      "description": "Admin console page visibility configurations"
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "name": "Remix: Firestore X-Degan QR Admin Dashboard",
+  "description": "Web Admin Dashboard (Single Page Application) for X-Degan QR Multi-Sekolah with multi-school filters, student management, and attendance logs.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
