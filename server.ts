@@ -6,21 +6,9 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-// Initialize Gemini SDK securely on server-side with robust quote-stripping
-const getCleanApiKey = () => {
-  let key = process.env.GEMINI_API_KEY || "";
-  key = key.trim();
-  if (key.startsWith('"') && key.endsWith('"')) {
-    key = key.substring(1, key.length - 1);
-  }
-  if (key.startsWith("'") && key.endsWith("'")) {
-    key = key.substring(1, key.length - 1);
-  }
-  return key.trim();
-};
-
+// Initialize Gemini SDK securely on server-side
 const ai = new GoogleGenAI({
-  apiKey: getCleanApiKey(),
+  apiKey: process.env.GEMINI_API_KEY,
   httpOptions: {
     headers: {
       'User-Agent': 'aistudio-build',

@@ -16,11 +16,12 @@ import {
   MapPin,
   KeyRound,
   Shield,
-  GraduationCap
+  GraduationCap,
+  Chrome
 } from 'lucide-react';
 
 export const LoginView: React.FC = () => {
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   
   // Login States
   const [email, setEmail] = useState<string>('');
@@ -28,6 +29,10 @@ export const LoginView: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState<string>('');
   const [successMsg, setSuccessMsg] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
+  const [googleLoading, setGoogleLoading] = useState<boolean>(false);
+  const [domainCopied, setDomainCopied] = useState<boolean>(false);
+
+  const isUnauthorizedDomainError = errorMsg.toLowerCase().includes('unauthorized-domain') || errorMsg.toLowerCase().includes('auth/unauthorized-domain');
 
   // Mode state: Login vs Register
   const [isRegister, setIsRegister] = useState<boolean>(false);
@@ -91,6 +96,24 @@ export const LoginView: React.FC = () => {
       setErrorMsg(err.message || 'Terjadi kesalahan sistem.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setGoogleLoading(true);
+    setErrorMsg('');
+    setSuccessMsg('');
+    try {
+      const result = await loginWithGoogle();
+      if (!result.success) {
+        setErrorMsg(result.error || 'Gagal login dengan Google.');
+      } else {
+        setSuccessMsg('Masuk dengan Google sukses!');
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Terjadi kesalahan saat masuk dengan Google.');
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -239,9 +262,45 @@ export const LoginView: React.FC = () => {
           </div>
 
           {errorMsg && (
-            <div className="mb-4 p-3.5 bg-rose-500/10 border border-rose-500/20 text-rose-300 rounded-xl flex items-start space-x-2 text-xs">
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-400" />
-              <span>{errorMsg}</span>
+            <div className="mb-4 p-3.5 bg-rose-500/10 border border-rose-500/20 text-rose-300 rounded-xl flex flex-col space-y-2 text-xs">
+              <div className="flex items-start space-x-2">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-400" />
+                <span>{errorMsg}</span>
+              </div>
+              
+              {isUnauthorizedDomainError && (
+                <div className="mt-2.5 pt-2.5 border-t border-rose-500/10 text-[11px] text-slate-300 space-y-2 leading-relaxed">
+                  <p className="font-bold text-amber-400">⚠️ Masalah Otorisasi Domain Firebase:</p>
+                  <p>
+                    Masuk dengan Google dibatasi hanya untuk domain yang telah Anda otorisasi di Konsol Firebase Anda. Silakan tambahkan domain aplikasi saat ini agar Google Auth diizinkan berjalan.
+                  </p>
+                  <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 space-y-1.5 font-mono">
+                    <div className="text-[10px] text-slate-400 font-sans">Salin domain ini:</div>
+                    <div className="flex items-center justify-between text-indigo-400 select-all font-bold">
+                      <span className="break-all">{window.location.hostname}</span>
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(window.location.hostname);
+                          setDomainCopied(true);
+                          setTimeout(() => setDomainCopied(false), 2000);
+                        }}
+                        className="text-[9px] bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-0.5 rounded cursor-pointer transition-colors shrink-0 ml-2"
+                      >
+                        {domainCopied ? 'Tersalin!' : 'Salin'}
+                      </button>
+                    </div>
+                  </div>
+                  <ol className="list-decimal list-inside space-y-1 text-slate-400 pl-1">
+                    <li>Buka <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" className="text-indigo-400 underline hover:text-indigo-300">Firebase Console</a> Anda.</li>
+                    <li>Pilih proyek Anda, lalu navigasikan ke <strong>Build &gt; Authentication</strong>.</li>
+                    <li>Buka tab <strong>Settings</strong> di bagian atas.</li>
+                    <li>Pilih menu <strong>Authorized domains</strong> di sebelah kiri.</li>
+                    <li>Klik <strong>Add domain</strong> lalu tempelkan domain yang sudah disalin di atas.</li>
+                    <li>Setelah disimpan, tunggu beberapa detik dan coba masuk lagi!</li>
+                  </ol>
+                </div>
+              )}
             </div>
           )}
 
@@ -306,7 +365,7 @@ export const LoginView: React.FC = () => {
               <div className="pt-2">
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || googleLoading}
                   className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 active:scale-98 focus:outline-hidden shadow-lg transition-all cursor-pointer"
                 >
                   {loading ? (
@@ -315,6 +374,30 @@ export const LoginView: React.FC = () => {
                     <>
                       <span>Masuk ke Dashboard</span>
                       <ArrowRight className="w-4 h-4 ml-2" />
+                    </>
+                  )}
+                </button>
+              </div>
+
+              <div className="relative my-4 flex py-1 items-center">
+                <div className="flex-grow border-t border-slate-800"></div>
+                <span className="flex-shrink mx-3 text-[10px] text-slate-500 font-bold uppercase tracking-wider">atau</span>
+                <div className="flex-grow border-t border-slate-800"></div>
+              </div>
+
+              <div>
+                <button
+                  type="button"
+                  onClick={handleGoogleLogin}
+                  disabled={loading || googleLoading}
+                  className="w-full flex justify-center items-center py-3 px-4 border border-slate-850 rounded-xl text-xs font-bold text-slate-200 bg-slate-950/40 hover:bg-slate-900 active:scale-98 focus:outline-hidden transition-all cursor-pointer space-x-2.5"
+                >
+                  {googleLoading ? (
+                    <div className="w-4 h-4 border-2 border-slate-400 border-t-white rounded-full animate-spin"></div>
+                  ) : (
+                    <>
+                      <Chrome className="w-4 h-4 text-rose-500" />
+                      <span>Masuk dengan Google</span>
                     </>
                   )}
                 </button>
@@ -556,7 +639,7 @@ export const LoginView: React.FC = () => {
               <div className="pt-4">
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || googleLoading}
                   className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 active:scale-98 focus:outline-hidden shadow-lg transition-all cursor-pointer"
                 >
                   {loading ? (
@@ -565,6 +648,30 @@ export const LoginView: React.FC = () => {
                     <>
                       <UserPlus className="w-4 h-4 mr-2" />
                       <span>Daftar Akun {regRole === 'guru' ? 'Guru' : 'Admin'}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              <div className="relative my-4 flex py-1 items-center">
+                <div className="flex-grow border-t border-slate-800"></div>
+                <span className="flex-shrink mx-3 text-[10px] text-slate-500 font-bold uppercase tracking-wider">atau</span>
+                <div className="flex-grow border-t border-slate-800"></div>
+              </div>
+
+              <div>
+                <button
+                  type="button"
+                  onClick={handleGoogleLogin}
+                  disabled={loading || googleLoading}
+                  className="w-full flex justify-center items-center py-3 px-4 border border-slate-850 rounded-xl text-xs font-bold text-slate-200 bg-slate-950/40 hover:bg-slate-900 active:scale-98 focus:outline-hidden transition-all cursor-pointer space-x-2.5"
+                >
+                  {googleLoading ? (
+                    <div className="w-4 h-4 border-2 border-slate-400 border-t-white rounded-full animate-spin"></div>
+                  ) : (
+                    <>
+                      <Chrome className="w-4 h-4 text-rose-500" />
+                      <span>Daftar / Masuk dengan Google</span>
                     </>
                   )}
                 </button>
