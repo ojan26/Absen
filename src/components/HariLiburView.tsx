@@ -68,8 +68,15 @@ export const HariLiburView: React.FC<HariLiburViewProps> = ({ selectedNpsn, scho
         body: JSON.stringify({ month: aiMonth, year: aiYear }),
       });
       if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.error || 'Gagal memuat saran dari AI');
+        const resText = await res.text();
+        let errMsg = 'Gagal memuat saran dari AI';
+        try {
+          const errData = JSON.parse(resText);
+          errMsg = errData.error || errMsg;
+        } catch (_) {
+          errMsg = `HTTP Error ${res.status}: ${resText.slice(0, 150)}`;
+        }
+        throw new Error(errMsg);
       }
       const data = await res.json();
       

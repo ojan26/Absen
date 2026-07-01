@@ -127,22 +127,68 @@ export const FirebaseConfigView: React.FC = () => {
       
       const testAuth = getAuth(testAppInstance);
       
+      let authSuccess = false;
+      let authErrorMsg = "";
+      
       // Try anonymous authentication
-      await signInAnonymously(testAuth);
+      try {
+        await signInAnonymously(testAuth);
+        authSuccess = true;
+      } catch (authErr: any) {
+        console.warn("Auth test failed:", authErr);
+        authErrorMsg = authErr.code || authErr.message || String(authErr);
+      }
 
       const testDb = (dbId && dbId !== '(default)') 
         ? getFirestore(testAppInstance, dbId.trim()) 
         : getFirestore(testAppInstance);
 
       // Try reading 'sekolah' collection to check security rules
-      const colRef = collection(testDb, 'sekolah');
-      const q = query(colRef, limit(1));
-      await getDocs(q);
+      let firestoreSuccess = false;
+      let firestoreErrorMsg = "";
+      try {
+        const colRef = collection(testDb, 'sekolah');
+        const q = query(colRef, limit(1));
+        await getDocs(q);
+        firestoreSuccess = true;
+      } catch (fsErr: any) {
+        console.warn("Firestore test failed:", fsErr);
+        firestoreErrorMsg = fsErr.code || fsErr.message || String(fsErr);
+      }
 
-      setTestResult({
-        success: true,
-        message: "Koneksi Berhasil! Firebase dapat dihubungi, otentikasi anonim sukses, dan aturan keamanan Firestore mengizinkan pembacaan data."
-      });
+      if (authSuccess && firestoreSuccess) {
+        setTestResult({
+          success: true,
+          message: "Koneksi Berhasil! Firebase Auth (Anonim) dan Firestore Database telah dikonfigurasi dengan benar dan bekerja dengan sempurna."
+        });
+      } else if (firestoreSuccess && !authSuccess) {
+        let authFriendlyExplanation = authErrorMsg;
+        if (authErrorMsg.includes("configuration-not-found") || authErrorMsg.includes("auth/configuration-not-found")) {
+          authFriendlyExplanation = "Fitur Authentication belum aktif di proyek Firebase Anda. Harap aktifkan menu Authentication di Firebase Console Anda dan aktifkan metode masuk 'Anonymous' (Masuk Tanpa Nama).";
+        } else if (authErrorMsg.includes("operation-not-allowed")) {
+          authFriendlyExplanation = "Metode masuk 'Anonymous' dinonaktifkan di Firebase Console. Silakan aktifkan di tab Authentication -> Sign-in method -> Anonymous.";
+        }
+        setTestResult({
+          success: true,
+          message: `Koneksi Database Firestore SUKSES, namun Firebase Auth Gagal: "${authFriendlyExplanation}".`
+        });
+      } else {
+        // Firestore failed, maybe Auth failed too
+        let errorDesc = firestoreErrorMsg || authErrorMsg;
+        if (errorDesc.includes("permission-denied") || errorDesc.includes("Missing or insufficient permissions")) {
+          errorDesc = "Aturan keamanan (Security Rules) Firestore menolak pembacaan data. Pastikan aturan keamanan Anda mengizinkan akses.";
+        } else if (errorDesc.includes("invalid-api-key") || errorDesc.includes("API key not valid")) {
+          errorDesc = "API Key Firebase tidak valid atau tidak diizinkan mengakses proyek ini. Periksa kembali API Key Anda.";
+        } else if (errorDesc.includes("project-not-found")) {
+          errorDesc = "Project ID tidak ditemukan di Firebase. Periksa kembali kecocokan Project ID Anda.";
+        } else if (errorDesc.includes("configuration-not-found")) {
+          errorDesc = "Layanan Authentication belum diaktifkan di Firebase Console Anda. Silakan buka menu Authentication di Firebase Console, lalu klik 'Get Started' dan aktifkan metode login 'Anonymous' (Masuk Tanpa Nama).";
+        }
+        setTestResult({
+          success: false,
+          message: `Koneksi Gagal! ${errorDesc}`
+        });
+      }
     } catch (e: any) {
       console.error("Firebase connection test failed: ", e);
       let errorDesc = e.message || String(e);
